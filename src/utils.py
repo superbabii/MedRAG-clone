@@ -192,29 +192,74 @@ class Retriever:
             self.embedding_function = CustomizeSentenceTransformer(self.retriever_name, device="cuda" if torch.cuda.is_available() else "cpu")
         self.embedding_function.eval()
 
+    # def get_relevant_documents(self, question, k=32, id_only=False, **kwarg):
+    #     assert type(question) == str
+    #     question = [question]
+
+    #     with torch.no_grad():
+    #         query_embed = self.embedding_function.encode(question, **kwarg)
+    #     res_ = self.index.search(query_embed, k=k)
+    #     ids = ['_'.join([self.metadatas[i]["source"], str(self.metadatas[i]["index"])]) for i in res_[1][0]]
+    #     indices = [self.metadatas[i] for i in res_[1][0]]
+
+    #     scores = res_[0][0].tolist()
+        
+    #     if id_only:
+    #         return [{"id":i} for i in ids], scores
+    #     else:
+    #         return self.idx2txt(indices), scores
+
+    # def idx2txt(self, indices): # return List of Dict of str
+    #     '''
+    #     Input: List of Dict( {"source": str, "index": int} )
+    #     Output: List of str
+    #     '''
+    #     return [json.loads(open(os.path.join(self.chunk_dir, i["source"]+".jsonl")).read().strip().split('\n')[i["index"]]) for i in indices]
+    
     def get_relevant_documents(self, question, k=32, id_only=False, **kwarg):
         assert type(question) == str
         question = [question]
 
         with torch.no_grad():
             query_embed = self.embedding_function.encode(question, **kwarg)
+
         res_ = self.index.search(query_embed, k=k)
         ids = ['_'.join([self.metadatas[i]["source"], str(self.metadatas[i]["index"])]) for i in res_[1][0]]
-        indices = [self.metadatas[i] for i in res_[1][0]]
 
+        # Ensure indices are within the bounds of the metadata list
+        valid_indices = [i for i in res_[1][0] if i < len(self.metadatas)]
+        indices = [self.metadatas[i] for i in valid_indices]
         scores = res_[0][0].tolist()
-        
+
         if id_only:
-            return [{"id":i} for i in ids], scores
+            return [{"id": i} for i in ids], scores
         else:
             return self.idx2txt(indices), scores
 
-    def idx2txt(self, indices): # return List of Dict of str
+    def idx2txt(self, indices):
         '''
         Input: List of Dict( {"source": str, "index": int} )
         Output: List of str
         '''
-        return [json.loads(open(os.path.join(self.chunk_dir, i["source"]+".jsonl")).read().strip().split('\n')[i["index"]]) for i in indices]
+        documents = []
+        for i in indices:
+            json_file_path = os.path.join(self.chunk_dir, i["source"] + ".jsonl")
+            
+            # Check if the JSONL file exists
+            if not os.path.exists(json_file_path):
+                print(f"Warning: {json_file_path} does not exist.")
+                continue
+
+            with open(json_file_path, 'r') as f:
+                lines = f.read().strip().split('\n')
+
+                # Ensure the index is within the bounds of the JSONL file
+                if i["index"] < len(lines):
+                    documents.append(json.loads(lines[i["index"]]))
+                else:
+                    print(f"Warning: Index {i['index']} out of range for {json_file_path}.")
+        
+        return documents
 
 class RetrievalSystem:
 
