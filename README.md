@@ -1,2 +1,2 @@
 # MedRAG-clone
-LLM: OpenAI, Dataset: MMUL, Corpus: PubMed, Retriever: MedCPT
+LLM: OpenAI, Dataset: MMUL, Corpus: textbooks, Retriever: MedCPT
