@@ -80,4 +80,3 @@ The system is built to run on local machines or cloud platforms like Google Clou
 ## License
 
 This project is licensed under the MIT License.
-```
