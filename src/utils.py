@@ -208,13 +208,44 @@ class Retriever:
             return [{"id":i} for i in ids], scores
         else:
             return self.idx2txt(indices), scores
-
-    def idx2txt(self, indices): # return List of Dict of str
+        
+    def idx2txt(self, indices):
         '''
         Input: List of Dict( {"source": str, "index": int} )
         Output: List of str
         '''
-        return [json.loads(open(os.path.join(self.chunk_dir, i["source"]+".jsonl")).read().strip().split('\n')[i["index"]]) for i in indices]
+        result = []
+        for i in indices:
+            try:
+                # Load the corresponding JSON file for the source
+                with open(os.path.join(self.chunk_dir, i["source"] + ".jsonl"), 'r') as file:
+                    lines = file.read().strip().split('\n')
+                    
+                    # Ensure the index is within the valid range
+                    if 0 <= i["index"] < len(lines):
+                        item = json.loads(lines[i["index"]])
+                        
+                        # Handle the possible structures in your JSON data
+                        if "contents" in item:
+                            result.append(item["contents"])
+                        elif "content" in item:
+                            result.append(item["content"])
+                        else:
+                            result.append(item)  # Add the whole item if structure is unknown
+                    else:
+                        print(f"Warning: Index {i['index']} out of range for source {i['source']}")
+            except Exception as e:
+                print(f"Error reading file {i['source']}.jsonl: {e}")
+        
+        return result
+
+
+    # def idx2txt(self, indices): # return List of Dict of str
+    #     '''
+    #     Input: List of Dict( {"source": str, "index": int} )
+    #     Output: List of str
+    #     '''
+    #     return [json.loads(open(os.path.join(self.chunk_dir, i["source"]+".jsonl")).read().strip().split('\n')[i["index"]]) for i in indices]
 
 class RetrievalSystem:
 
