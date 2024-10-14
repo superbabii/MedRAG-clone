@@ -7,7 +7,7 @@ with open("benchmark.json", "r") as file:
     benchmark_data = json.load(file)
 
 # Select 5 random samples from the benchmark
-random_questions = random.sample(list(benchmark_data.items()), 5)
+random_questions = random.sample(list(benchmark_data.items()), 100)
 
 # Initialize the MedRAG model
 medrag = MedRAG(llm_name="OpenAI/gpt-3.5-turbo-16k", rag=True, retriever_name="MedCPT", corpus_name="Textbooks")
@@ -22,7 +22,7 @@ for question_id, data in random_questions:
     correct_answer = data["answer"]
 
     # Get model's prediction
-    answer, snippets, scores = medrag.answer(question=question, options=options, k=2)
+    answer, snippets, scores = medrag.answer(question=question, options=options, k=1)
 
     # Check if the answer is returned as a string and try to parse it as JSON if necessary
     if isinstance(answer, str):
