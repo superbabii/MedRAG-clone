@@ -22,16 +22,29 @@ for question_id, data in random_questions:
     correct_answer = data["answer"]
 
     # Get model's prediction
-    answer, snippets, scores = medrag.answer(question=question, options=options, k=5)
+    answer, snippets, scores = medrag.answer(question=question, options=options, k=2)
 
-    # Compare with the correct answer
+    # Check if the answer is returned as a string and try to parse it as JSON if necessary
+    if isinstance(answer, str):
+        try:
+            answer = json.loads(answer)  # Try parsing the string as JSON
+        except json.JSONDecodeError:
+            print(f"Error: Unable to parse 'answer' for question '{question_id}' as JSON.")
+            answer = {}
+
+    # Access the 'answer_choice' and 'step_by_step_thinking' fields from the parsed answer
+    model_answer = answer.get('answer_choice', 'No answer provided')
+    rationale = answer.get('step_by_step_thinking', 'No rationale provided')
+
+    # Store comparison results
     result = {
         "question_id": question_id,
         "question": question,
         "options": options,
-        "model_answer": answer['answer_choice'],
+        "model_answer": model_answer,
         "correct_answer": correct_answer,
-        "is_correct": answer['answer_choice'] == correct_answer
+        "is_correct": model_answer == correct_answer,
+        "rationale": rationale
     }
 
     results.append(result)
@@ -44,6 +57,7 @@ for result in results:
     print(f"Model Answer: {result['model_answer']}")
     print(f"Correct Answer: {result['correct_answer']}")
     print(f"Correct: {result['is_correct']}")
+    print(f"Rationale: {result['rationale']}")
     print("-" * 50)
 
 # Calculate accuracy
